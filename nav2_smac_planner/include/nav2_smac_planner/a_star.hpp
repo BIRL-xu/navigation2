@@ -234,6 +234,7 @@ protected:
    * @param cost The cost to sort into the open set of the node
    * @param node Node pointer reference to add to open set
    */
+  // 创建一个空节点并添加到搜素图中。
   inline NodePtr addToGraph(const unsigned int & index);
 
   /**

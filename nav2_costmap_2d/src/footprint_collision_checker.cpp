@@ -119,6 +119,7 @@ void FootprintCollisionChecker<CostmapT>::setCostmap(CostmapT costmap)
   costmap_ = costmap;
 }
 
+// 将机器人轮廓顶点转换到地图坐标系下进行检查。
 template<typename CostmapT>
 double FootprintCollisionChecker<CostmapT>::footprintCostAtPose(
   double x, double y, double theta, const Footprint footprint)

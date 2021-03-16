@@ -43,12 +43,13 @@ SmacPlanner::~SmacPlanner()
     _name.c_str());
 }
 
+// 初始化函数
 void SmacPlanner::configure(
   const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
   std::string name, std::shared_ptr<tf2_ros::Buffer>/*tf*/,
   std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
 {
-  auto node = parent.lock();
+  auto node = parent.lock(); // ROS2管理生命周期的节点，不是路径规划的节点！
   _logger = node->get_logger();
   _clock = node->get_clock();
   _costmap = costmap_ros->getCostmap();
@@ -63,6 +64,7 @@ void SmacPlanner::configure(
   bool smooth_path;
   std::string motion_model_for_search;
 
+  // 加载规划器参数
   // General planner params
   nav2_util::declare_parameter_if_not_declared(
     node, name + ".tolerance", rclcpp::ParameterValue(0.125));
@@ -141,17 +143,20 @@ void SmacPlanner::configure(
   }
 
   // convert to grid coordinates
+  // 将转弯半径大小转换为栅格数。
   const double minimum_turning_radius_global_coords = search_info.minimum_turning_radius;
   search_info.minimum_turning_radius =
     search_info.minimum_turning_radius / (_costmap->getResolution() * _downsampling_factor);
 
+  // 构造A*搜索
   _a_star = std::make_unique<AStarAlgorithm<NodeSE2>>(motion_model, search_info);
   _a_star->initialize(
     allow_unknown,
     max_iterations,
     max_on_approach_iterations);
-  _a_star->setFootprint(costmap_ros->getRobotFootprint(), costmap_ros->getUseRadius());
+  _a_star->setFootprint(costmap_ros->getRobotFootprint(), costmap_ros->getUseRadius()); // 设置机器人轮廓或半径
 
+  // 初始化基于Ceres的梯度下降平滑模块。
   if (smooth_path) {
     _smoother = std::make_unique<Smoother>();
     _optimizer_params.get(node.get(), name);
@@ -160,6 +165,7 @@ void SmacPlanner::configure(
     _smoother->initialize(_optimizer_params);
   }
 
+  // 构造代价地图将采样器(降低分辨率)
   if (_downsample_costmap && _downsampling_factor > 1) {
     std::string topic_name = "downsampled_costmap";
     _costmap_downsampler = std::make_unique<CostmapDownsampler>();
@@ -223,7 +229,7 @@ nav_msgs::msg::Path SmacPlanner::createPlan(
   // Downsample costmap, if required
   nav2_costmap_2d::Costmap2D * costmap = _costmap;
   if (_costmap_downsampler) {
-    costmap = _costmap_downsampler->downsample(_downsampling_factor);
+    costmap = _costmap_downsampler->downsample(_downsampling_factor); // 生成将采样后的代价地图(降低分辨率)
   }
 
   // Set Costmap

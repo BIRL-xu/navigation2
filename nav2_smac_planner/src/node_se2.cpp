@@ -68,11 +68,13 @@ void MotionTable::initDubin(
   // On circle of radius minimum turning angle, we need select motion primatives
   // with chord length > sqrt(2) and be an increment of our bin size
   //
+  // 求最小步长sqrt(2)作为弦长时，以最小半径运动时的圆心角。
   // chord >= sqrt(2) >= 2 * R * sin (angle / 2); where angle / N = quantized bin size
   // Thusly: angle <= 2.0 * asin(sqrt(2) / (2 * R))
   float angle = 2.0 * asin(sqrt(2.0) / (2 * search_info.minimum_turning_radius));
   // Now make sure angle is an increment of the quantized bin size
   // And since its based on the minimum chord, we need to make sure its always larger
+  // 计算圆心角对应等分角的序号。
   bin_size =
     2.0f * static_cast<float>(M_PI) / static_cast<float>(num_angle_quantization);
   float increments;
@@ -83,7 +85,7 @@ void MotionTable::initDubin(
     // paths with loops in them
     increments = ceil(angle / bin_size);
   }
-  angle = increments * bin_size;
+  angle = increments * bin_size; // 圆心角对应的等分角
 
   // find deflections
   // If we make a right triangle out of the chord in circle of radius
@@ -165,6 +167,7 @@ MotionPose MotionTable::getProjection(const NodeSE2 * node, const unsigned int &
   const MotionPose & motion_model = projections[motion_index];
 
   // transform delta X, Y, and Theta into local coordinates
+  // 将子节点坐标转换到当前节点坐标系下。
   const float & node_heading = node->pose.theta;
   const float cos_theta = cos(node_heading * bin_size);  // needs actual angle [0, 2PI]
   const float sin_theta = sin(node_heading * bin_size);
@@ -295,6 +298,7 @@ float NodeSE2::getHeuristicCost(
   return NodeSE2::neutral_cost * std::max(wavefront_heuristic, motion_heuristic);
 }
 
+/**根据运动模型类型初始化运动基元表**/
 void NodeSE2::initMotionModel(
   const MotionModel & motion_model,
   unsigned int & size_x,
@@ -349,7 +353,7 @@ void NodeSE2::computeWavefrontHeuristic(
   q.emplace(goal_index);
 
   unsigned int idx = goal_index;
-  _wavefront_heuristic[idx] = 2;
+  _wavefront_heuristic[idx] = 2; // 为什么目标点的启发值是2？
 
   static const std::vector<int> neighborhood = {1, -1,  // left right
     size_x_int, -size_x_int,  // up down
@@ -404,7 +408,7 @@ void NodeSE2::getNeighbors(
   const MotionPoses motion_projections = motion_table.getProjections(node);
 
   for (unsigned int i = 0; i != motion_projections.size(); i++) {
-    index = NodeSE2::getIndex(
+    index = NodeSE2::getIndex( // 子节点在搜索图中的id、
       static_cast<unsigned int>(motion_projections[i]._x),
       static_cast<unsigned int>(motion_projections[i]._y),
       static_cast<unsigned int>(motion_projections[i]._theta),

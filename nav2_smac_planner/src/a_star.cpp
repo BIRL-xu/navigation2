@@ -51,7 +51,7 @@ AStarAlgorithm<NodeT>::AStarAlgorithm(
   _motion_model(motion_model),
   _collision_checker(nullptr)
 {
-  _graph.reserve(100000);
+  _graph.reserve(100000); // 分配内存用于构造搜索图。
 }
 
 template<typename NodeT>
@@ -91,6 +91,7 @@ void AStarAlgorithm<Node2D>::createGraph(
   }
 }
 
+/**初始化搜索图和运动模型，只会调用一次。**/
 template<>
 void AStarAlgorithm<NodeSE2>::createGraph(
   const unsigned int & x_size,
@@ -99,7 +100,7 @@ void AStarAlgorithm<NodeSE2>::createGraph(
   nav2_costmap_2d::Costmap2D * & costmap)
 {
   _costmap = costmap;
-  _collision_checker = GridCollisionChecker(costmap);
+  _collision_checker = GridCollisionChecker(costmap); // 初始化碰撞检查器，TODO:自己实现碰撞检测类。
   _collision_checker.setFootprint(_footprint, _is_radius_footprint);
 
   _dim3_size = dim_3_size;
@@ -251,6 +252,8 @@ bool AStarAlgorithm<NodeT>::createPath(
 
   // Given an index, return a node ptr reference if its collision-free and valid
   const unsigned int max_index = getSizeX() * getSizeY() * getSizeDim3();
+  // 定义一个bool func(const unsigned int & index, NodePtr & neighbor_rtn)类型的正则函数。
+  // 作用是将index添加到搜索图中并提取其对应的节点指针。
   NodeGetter neighborGetter =
     [&, this](const unsigned int & index, NodePtr & neighbor_rtn) -> bool
     {
@@ -316,7 +319,7 @@ bool AStarAlgorithm<NodeT>::createPath(
       // 4.2) If this is a lower cost than prior, we set this as the new cost and new approach
       if (g_cost < getAccumulatedCost(neighbor)) {
         neighbor->setAccumulatedCost(g_cost);
-        neighbor->parent = current_node;
+        neighbor->parent = current_node; // 现在的运动代价值更低，说明之前的代价值是从其它父节点运动该点的代价值，所以需要更新父节点。
 
         // 4.3) If not in queue or visited, add it, `getNeighbors()` handles
         neighbor->queued();
